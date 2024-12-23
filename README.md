@@ -16,82 +16,15 @@ npm install @langchain/langgraph-sdk
 
 ## Classes
 
-### **AssistantsClient**
-
-This client handles operations related to creating, managing, and retrieving assistants.
-
-#### **Constructor**
-
-```typescript
-const assistantsClient = new AssistantsClient(config);
-```
-- **`config`** *(optional)*: `ClientConfig` object for configuration.
-
-#### **Methods**
-
-##### `create(payload)`
-Creates a new assistant.
-
-**Parameters**:
-- `payload`:
-  - `assistantId?`: *(optional)* ID of the assistant.
-  - `config?`: *(optional)* Configuration for the assistant.
-  - `graphId`: ID of the graph.
-  - `ifExists?`: *(optional)* Behavior if assistant already exists.
-  - `metadata?`: *(optional)* Metadata.
-  - `name?`: *(optional)* Name of the assistant.
-
-**Returns**: `Promise<Assistant>`
-
-**Example**:
-
-```typescript
-const assistant = await assistantsClient.create({
-  graphId: "graph-id-123",
-  name: "My Assistant",
-});
-console.log("Created Assistant:", assistant); // Log the created assistant details
-```
-
-##### `delete(assistantId)`
-Deletes an assistant by ID.
-
-**Parameters**:
-- `assistantId`: ID of the assistant.
-
-**Returns**: `Promise<void>`
-
-**Example**:
-
-```typescript
-await assistantsClient.delete("assistant-id-123");
-console.log("Assistant deleted."); // Log confirmation after deletion
-```
-
-##### `get(assistantId)`
-Retrieves an assistant by ID.
-
-**Parameters**:
-- `assistantId`: ID of the assistant.
-
-**Returns**: `Promise<Assistant>`
-
-**Example**:
-
-```typescript
-const assistant = await assistantsClient.get("assistant-id-123");
-console.log("Assistant Details:", assistant); // Display assistant details
-```
-
----
-
 ### **Client**
 
-The `Client` class acts as the main entry point for the LangGraph SDK, allowing access to sub-clients like Assistants, Threads, Store, Crons, and Runs.
+The `Client` class acts as the main entry point for the LangGraph SDK, bundling all sub-clients (like Assistants, Threads, Store, Crons, and Runs) into a single instance. You can use this class to manage operations across the SDK's functionalities.
 
 #### **Constructor**
 
 ```typescript
+import { Client } from "@langchain/langgraph-sdk";
+
 const client = new Client(config);
 ```
 - **`config`** *(optional)*: `ClientConfig` object for configuration.
@@ -197,19 +130,25 @@ console.log("Searched items:", items);
 
 ---
 
+### **AssistantsClient**
+
+Operations related to creating, managing, and retrieving assistants can be accessed via the `assistants` property of the `Client` class.
+
+**Example**:
+
+```typescript
+const assistant = await client.assistants.create({
+  graphId: "graph-id-123",
+  name: "My Assistant",
+});
+console.log("Created Assistant:", assistant);
+```
+
+---
+
 ### **ThreadsClient**
 
-Handles operations related to threads.
-
-#### **Methods**
-
-##### `create(payload)`
-Creates a new thread.
-
-**Parameters**:
-- `payload`: Configuration for creating a thread.
-
-**Returns**: `Promise<Thread>`
+Operations related to threads can be accessed via the `threads` property of the `Client` class.
 
 **Example**:
 
@@ -217,22 +156,23 @@ Creates a new thread.
 const thread = await client.threads.create({
   metadata: { purpose: "example-thread" },
 });
-console.log("Created Thread:", thread); // Log created thread details
+console.log("Created Thread:", thread);
 ```
 
-##### `get(threadId)`
-Retrieves a thread by ID.
+---
 
-**Parameters**:
-- `threadId`: ID of the thread.
+### **CronsClient**
 
-**Returns**: `Promise<Thread>`
+Scheduled task operations are accessible via the `crons` property of the `Client` class.
 
 **Example**:
 
 ```typescript
-const thread = await client.threads.get("thread-id-123");
-console.log("Thread Details:", thread); // Log retrieved thread details
+const cronJob = await client.crons.create("assistant-id-123", {
+  interval: "0 * * * *",
+  metadata: { task: "hourly-task" },
+});
+console.log("Created Cron Job:", cronJob);
 ```
 
 ---
@@ -249,16 +189,16 @@ npm install @langchain/langgraph-sdk
 2. Create an API route in your Next.js App Router (`/app/api/assistants/route.ts`):
 
 ```typescript
-import { AssistantsClient } from "@langchain/langgraph-sdk";
+import { Client } from "@langchain/langgraph-sdk";
 
-const assistantsClient = new AssistantsClient();
+const client = new Client();
 
 export async function POST(request: Request) {
   const body = await request.json(); // Parse JSON body
   const { name, graphId } = body; // Extract name and graphId from request
 
   try {
-    const assistant = await assistantsClient.create({
+    const assistant = await client.assistants.create({
       name, // Pass name to the create method
       graphId, // Pass graphId to the create method
     });
