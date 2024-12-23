@@ -132,23 +132,20 @@ console.log("Searched items:", items);
 
 ### **AssistantsClient**
 
-Operations related to creating, managing, and retrieving assistants can be accessed via the `assistants` property of the `Client` class.
+The `AssistantsClient` allows managing assistants created in your Python application. Instead of creating new assistants, you can retrieve and interact with existing ones using their `assistantId`.
 
-**Example**:
+#### Example: Retrieve an Existing Assistant
 
 ```typescript
-const assistant = await client.assistants.create({
-  graphId: "graph-id-123",
-  name: "My Assistant",
-});
-console.log("Created Assistant:", assistant);
+const assistant = await client.assistants.get("existing-assistant-id");
+console.log("Retrieved Assistant:", assistant);
 ```
 
 ---
 
 ### **ThreadsClient**
 
-Operations related to threads can be accessed via the `threads` property of the `Client` class.
+Operations related to threads can be accessed via the `threads` property of the `Client` class. Threads are used for managing states or operations within your application.
 
 **Example**:
 
@@ -186,7 +183,7 @@ console.log("Created Cron Job:", cronJob);
 npm install @langchain/langgraph-sdk
 ```
 
-2. Create an API route in your Next.js App Router (`/app/api/assistants/route.ts`):
+2. Create an API route in your Next.js App Router (`/app/api/threads/route.ts`):
 
 ```typescript
 import { Client } from "@langchain/langgraph-sdk";
@@ -195,137 +192,53 @@ const client = new Client();
 
 export async function POST(request: Request) {
   const body = await request.json(); // Parse JSON body
-  const { name, graphId } = body; // Extract name and graphId from request
+  const { threadId } = body; // Extract threadId from request
 
   try {
-    const assistant = await client.assistants.create({
-      name, // Pass name to the create method
-      graphId, // Pass graphId to the create method
-    });
-    return new Response(JSON.stringify(assistant), { status: 201 }); // Return the created assistant
+    const thread = await client.threads.get(threadId); // Retrieve thread using its ID
+    return new Response(JSON.stringify(thread), { status: 200 }); // Return the retrieved thread
   } catch (error) {
-    console.error("Error creating assistant:", error); // Log errors if any
-    return new Response("Failed to create assistant", { status: 500 }); // Return error response
+    console.error("Error retrieving thread:", error); // Log errors if any
+    return new Response("Failed to retrieve thread", { status: 500 }); // Return error response
   }
 }
 ```
 
 ### Frontend Example
-Create a form to create an assistant:
+Interact with existing threads:
 
 ```typescript
 'use client';
 
 import { useState } from "react";
 
-export default function CreateAssistant() {
-  const [name, setName] = useState(""); // State to hold assistant name
-  const [graphId, setGraphId] = useState(""); // State to hold graph ID
+export default function FetchThread() {
+  const [threadId, setThreadId] = useState(""); // State to hold thread ID
+  const [thread, setThread] = useState(null); // State to hold thread data
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent default form submission
-
-    const res = await fetch("/api/assistants", {
+  const handleFetch = async () => {
+    const res = await fetch("/api/threads", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ name, graphId }), // Send name and graphId in the request body
+      body: JSON.stringify({ threadId }), // Send threadId in the request body
     });
 
     const data = await res.json(); // Parse the response
-    console.log("Created Assistant:", data); // Log the response
+    setThread(data); // Update thread state with retrieved data
   };
 
   return (
-    <form onSubmit={handleSubmit}> {/* Form to capture assistant details */}
-      <input
-        type="text"
-        placeholder="Assistant Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)} // Update name state on input change
-      />
-      <input
-        type="text"
-        placeholder="Graph ID"
-        value={graphId}
-        onChange={(e) => setGraphId(e.target.value)} // Update graphId state on input change
-      />
-      <button type="submit">Create Assistant</button> {/* Submit button */}
-    </form>
-  );
-}
-```
-
----
-
-## Real-World Example: Automated Task Management
-
-Use LangGraph SDK to manage tasks, create threads, and utilize assistants for automating workflows.
-
-### Backend
-
-1. **Create a task automation graph**:
-
-```typescript
-import { Client } from "@langchain/langgraph-sdk";
-
-const client = new Client();
-
-async function createTaskAutomation() {
-  const assistant = await client.assistants.create({
-    graphId: "task-graph-id", // Specify the graph ID for automation
-    name: "Task Automation Assistant", // Specify the assistant name
-  });
-
-  console.log("Assistant Created:", assistant); // Log the created assistant
-}
-
-createTaskAutomation();
-```
-
-2. **Trigger runs for tasks**:
-
-```typescript
-async function runTask(assistantId, threadId) {
-  const run = await client.runs.create(threadId, assistantId, {
-    payload: {
-      task: "Automate daily report generation", // Specify the task details
-    },
-  });
-
-  console.log("Run Created:", run); // Log the created run
-}
-```
-
-### Frontend
-
-Display ongoing tasks and statuses using the ThreadsClient:
-
-```typescript
-import { useEffect, useState } from "react";
-
-export default function TaskManager() {
-  const [tasks, setTasks] = useState([]); // State to hold tasks
-
-  useEffect(() => {
-    async function fetchTasks() {
-      const res = await fetch("/api/threads"); // Fetch thread data from API
-      const data = await res.json(); // Parse the response
-      setTasks(data); // Update tasks state with fetched data
-    }
-
-    fetchTasks(); // Call the function on component mount
-  }, []);
-
-  return (
     <div>
-      <h1>Task Manager</h1>
-      <ul>
-        {tasks.map((task) => (
-          <li key={task.id}>{task.metadata.purpose}</li> // Render task purposes
-        ))}
-      </ul>
+      <input
+        type="text"
+        placeholder="Thread ID"
+        value={threadId}
+        onChange={(e) => setThreadId(e.target.value)} // Update threadId state on input change
+      />
+      <button onClick={handleFetch}>Fetch Thread</button> {/* Button to fetch thread */}
+      {thread && <pre>{JSON.stringify(thread, null, 2)}</pre>} {/* Display thread details */}
     </div>
   );
 }
@@ -333,4 +246,4 @@ export default function TaskManager() {
 
 ---
 
-With this documentation, you can easily understand and utilize the LangGraph SDK to build robust applications integrated with Next.js.
+With this documentation, you can easily understand and utilize the LangGraph SDK to interact with existing assistants and threads in your Python-based applications while building robust integrations in Next.js.
